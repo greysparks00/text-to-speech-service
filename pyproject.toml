@@ -1,0 +1,22 @@
+[project]
+name = "text-to-speech-service"
+description="Creates speech audio from provided text."
+version = "0.1.0"
+requires-python = ">=3.11"
+
+dependencies = [
+    "fastapi",
+    "pyttsx4>=3.0.15",
+    "uuid>=1.30",
+    "uvicorn",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
