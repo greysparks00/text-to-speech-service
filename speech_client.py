@@ -1,29 +1,60 @@
+import uuid
+import traceback
+import threading
+from pathlib import Path
+
 import soundfile as sf
 
-from kittenml import KittenTTS
+BASE_DIR = Path(__file__).resolve().parent
+VOICE_PATH = BASE_DIR / "voices" / "tom_pearl.wav"
+TEMP_PATH = BASE_DIR / "temp_audios"
 
-import os
-import uuid
+model = None
+load_error = None
+generation_lock = threading.Lock()
 
-m = KittenTTS("KittenML/kitten-tts-2")
 
-VOICE_REFERENCE_PATH = "./voices/tom_pearl.wav"
-TEMP_AUDIO_PATH = "./temp_audios"
+def load_model():
+    global model, load_error
+
+    print("[TTS] Loading KittenTTS...", flush=True)
+
+    try:
+        from kittenml import KittenTTS
+
+        loaded = KittenTTS("KittenML/kitten-tts-2")
+        model = loaded
+
+        print("[TTS] Model loaded successfully!", flush=True)
+
+    except Exception as exc:
+        load_error = str(exc)
+        traceback.print_exc()
+
+
+def model_status():
+    if load_error is not None:
+        return "failed"
+
+    if model is None:
+        return "loading"
+
+    return "ready"
+
 
 def create_speech(text: str):
-    # generate voice
-    audio = m.generate(text, reference=VOICE_REFERENCE_PATH)
+    if model is None:
+        raise RuntimeError("TTS model is not ready")
 
-    # generate unique filename
-    random_id = str(uuid.uuid4())
-    os.makedirs(TEMP_AUDIO_PATH, exist_ok=True)
-    full_path = os.path.join(TEMP_AUDIO_PATH, random_id + ".wav")
+    TEMP_PATH.mkdir(exist_ok=True)
+    output_path = TEMP_PATH / f"{uuid.uuid4()}.wav"
 
-    # save to file
-    sf.write(full_path, audio, m.sample_rate)
+    with generation_lock:
+        audio = model.generate(
+            text,
+            reference=str(VOICE_PATH)
+        )
 
-    # validate output
-    if os.path.exists(full_path) and os.path.getsize(full_path) > 0:
-        return os.path.abspath(full_path)
-    else:
-        raise FileNotFoundError(f"Failed to generate audio file at {full_path}")
+        sf.write(str(output_path), audio, model.sample_rate)
+
+    return str(output_path)

@@ -4,7 +4,8 @@
         "port": 8085,
         "install": ["uv", "sync"],
         "command": [
-            "uv", "run", "uvicorn", "main:app",
+            "uv", "run", "python", "-m", "uvicorn",
+            "main:app",
             "--host", "127.0.0.1",
             "--port", "8085"
         ]

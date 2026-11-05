@@ -1,17 +1,45 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from threading import Thread
+
+from fastapi import FastAPI, HTTPException
 from api.routes import router
+from speech_client import load_model, model_status
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Thread(
+        target=load_model,
+        daemon=True,
+        name="kitten-loader"
+    ).start()
+
+    yield
 
 app = FastAPI(
     title="Junction Service",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan
 )
 
-# health endpoint
 @app.get("/health", include_in_schema=False)
-async def health():
+def health():
+    status = model_status()
+
+    if status == "failed":
+        raise HTTPException(503, "Model failed to load")
+
     return {
-        "status": "healthy"
+        "status": "healthy",
+        "model": status
     }
 
-# register application endpoints
+@app.get("/ready")
+def ready():
+    status = model_status()
+
+    if status != "ready":
+        raise HTTPException(503, f"Model is {status}")
+
+    return {"status": "ready"}
+
 app.include_router(router)
