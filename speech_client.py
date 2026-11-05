@@ -1,31 +1,26 @@
+import soundfile as sf
+
+from kittenml import KittenTTS
+
 import os
 import uuid
 
-import pyttsx4
+m = KittenTTS("KittenML/kitten-tts-2")
 
+VOICE_REFERENCE_PATH = "./voices/tom_pearl.wav"
 TEMP_AUDIO_PATH = "./temp_audios"
 
-def create_speech(text: str, voice: int):
-    # initialize engine
-    speech_engine = pyttsx4.init()
-
-    voices = speech_engine.getProperty("voices")
-
-    # fallback to default voice if index is out of bounds
-    if voice >= len(voices):
-        voice = 0
-
-    # Set voice
-    speech_engine.setProperty("voice", voices[voice].id)
+def create_speech(text: str):
+    # generate voice
+    audio = m.generate(text, reference=VOICE_REFERENCE_PATH)
 
     # generate unique filename
     random_id = str(uuid.uuid4())
     os.makedirs(TEMP_AUDIO_PATH, exist_ok=True)
     full_path = os.path.join(TEMP_AUDIO_PATH, random_id + ".wav")
 
-    # queue file creation and flush the engine loop cleanly
-    speech_engine.save_to_file(text, full_path)
-    speech_engine.runAndWait()
+    # save to file
+    sf.write(full_path, audio, m.sample_rate)
 
     # validate output
     if os.path.exists(full_path) and os.path.getsize(full_path) > 0:

@@ -11,14 +11,10 @@ router = APIRouter()
 
 class SpeechRequest(BaseModel):
 	text: str = Field(min_length=1, max_length=2000)
-	voice: int = Field(default=0, ge=0, le=1)
 	
 @router.post("/synthesize")
 def synthesize(request: SpeechRequest):
-	path = create_speech(
-		request.text,
-		request.voice
-	)
+	path = create_speech(request.text)
 
 	return FileResponse(
 		path=path,
