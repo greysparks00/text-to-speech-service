@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 
 from api.routes import router
 from speech_client import load_model, model_status
+from simple_voice import simple_available
 
 
 @asynccontextmanager
@@ -32,7 +33,7 @@ app = FastAPI(
 def health():
     status = model_status()
 
-    if status == "failed":
+    if status == "failed" and not simple_available():
         raise HTTPException(
             status_code=503,
             detail="TTS model failed to load"
